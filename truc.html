@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Noncrossing Partition ↔ Binary Tree</title>
+
+<style>
+
+body{
+    margin:0;
+    overflow:hidden;
+    font-family:Arial,Helvetica,sans-serif;
+}
+
+#toolbar{
+    height:45px;
+    background:#222;
+    color:white;
+    display:flex;
+    align-items:center;
+    padding-left:10px;
+}
+
+button{
+    margin-right:10px;
+}
+
+#container{
+    display:flex;
+    width:100vw;
+    height:calc(100vh - 45px);
+}
+
+svg{
+    flex:1;
+    border:1px solid #bbb;
+}
+
+.point{
+    fill:white;
+    stroke:black;
+    stroke-width:2;
+    cursor:pointer;
+}
+
+.selected{
+    fill:orange;
+}
+
+.edge{
+    stroke:#555;
+    stroke-width:2;
+    fill:none;
+}
+
+.blockEdge{
+    stroke:#1f77b4;
+    stroke-width:3;
+    fill:none;
+}
+
+.treeEdge{
+    stroke:#444;
+    stroke-width:2;
+}
+
+.treeNode{
+    fill:white;
+    stroke:black;
+    stroke-width:2;
+}
+
+.label{
+    font-size:12px;
+    text-anchor:middle;
+    dominant-baseline:middle;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="toolbar">
+
+<button id="mergeBtn">Merge</button>
+<button id="splitBtn">Split</button>
+<button id="resetBtn">Reset</button>
+
+<span style="margin-left:20px">
+Click vertices to select them.
+</span>
+
+</div>
+
+<div id="container">
+
+<svg id="partition"></svg>
+
+<svg id="tree"></svg>
+
+</div>
+
+<script>
+
+//////////////////////////////////////////////////////////////////////
+//
+// BASIC DATA
+//
+//////////////////////////////////////////////////////////////////////
+
+const N = 10;
+
+const partitionSVG = document.getElementById("partition");
+const treeSVG = document.getElementById("tree");
+
+const radius = 180;
+
+const center = {
+    x:250,
+    y:250
+};
+
+let selected=[];
+
+//////////////////////////////////////////////////////////////////////
+//
+// NONCROSSING PARTITION
+//
+//////////////////////////////////////////////////////////////////////
+
+class NonCrossingPartition{
+
+    constructor(n){
+
+        this.n=n;
+
+        this.blocks=[];
+
+        for(let i=0;i<n;i++)
+            this.blocks.push([i]);
+
+    }
+
+    clone(){
+
+        let p=new NonCrossingPartition(this.n);
+
+        p.blocks=this.blocks.map(b=>b.slice());
+
+        return p;
+
+    }
+
+    normalize(){
+
+        for(let b of this.blocks)
+            b.sort((a,b)=>a-b);
+
+        this.blocks.sort((a,b)=>a[0]-b[0]);
+
+    }
+
+    blockContaining(v){
+
+        for(let b of this.blocks)
+            if(b.includes(v))
+                return b;
+
+        return null;
+
+    }
+
+    split(v){
+
+        let nb=[];
+
+        for(let b of this.blocks){
+
+            if(b.includes(v)){
+
+                for(let x of b)
+                    nb.push([x]);
+
+            }
+
+            else{
+
+                nb.push(b);
+
+            }
+
+        }
+
+        this.blocks=nb;
+
+        this.normalize();
+
+    }
+
+    merge(a,b){
+
+        let A=this.blockContaining(a);
+        let B=this.blockContaining(b);
+
+        if(A===B)
+            return;
+
+        let candidate=[];
+
+        for(let x of A)
+            candidate.push(x);
+
+        for(let x of B)
+            candidate.push(x);
+
+        candidate.sort((x,y)=>x-y);
+
+        let tmp=[];
+
+        for(let blk of this.blocks){
+
+            if(blk!==A && blk!==B)
+                tmp.push(blk);
+
+        }
+
+        tmp.push(candidate);
+
+        let test=new NonCrossingPartition(this.n);
+        test.blocks=tmp;
+        test.normalize();
+
+        if(test.isNonCrossing()){
+
+            this.blocks=test.blocks;
+
+        }
+
+        else{
+
+            alert("This merge would create crossings.");
+
+        }
+
+    }
