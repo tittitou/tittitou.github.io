@@ -244,3 +244,822 @@ class NonCrossingPartition{
         }
 
     }
+
+        /////////////////////////////////////////////////////////////
+    // Test whether two chords intersect in the interior
+    /////////////////////////////////////////////////////////////
+
+    segmentsCross(a,b,c,d){
+
+        if(a>b){
+            let t=a;
+            a=b;
+            b=t;
+        }
+
+        if(c>d){
+            let t=c;
+            c=d;
+            d=t;
+        }
+
+        if(a==c || a==d || b==c || b==d)
+            return false;
+
+        let ab = (a<c && c<b) ^ (a<d && d<b);
+        let cd = (c<a && a<d) ^ (c<b && b<d);
+
+        return ab && cd;
+
+    }
+
+    /////////////////////////////////////////////////////////////
+    // Every block is represented by its polygon boundary.
+    // We triangulate it from the first vertex.
+    /////////////////////////////////////////////////////////////
+
+    isNonCrossing(){
+
+        let chords=[];
+
+        for(let block of this.blocks){
+
+            if(block.length<2)
+                continue;
+
+            let b=block.slice().sort((x,y)=>x-y);
+
+            for(let i=1;i<b.length-1;i++){
+
+                chords.push([b[0],b[i+1]]);
+
+            }
+
+        }
+
+        for(let i=0;i<chords.length;i++){
+
+            for(let j=i+1;j<chords.length;j++){
+
+                let A=chords[i];
+                let B=chords[j];
+
+                if(this.segmentsCross(
+                    A[0],A[1],
+                    B[0],B[1]
+                ))
+                    return false;
+
+            }
+
+        }
+
+        return true;
+
+    }
+
+}
+
+//////////////////////////////////////////////////////////////////////
+//
+// GLOBAL PARTITION
+//
+//////////////////////////////////////////////////////////////////////
+
+let partition=new NonCrossingPartition(N);
+
+//////////////////////////////////////////////////////////////////////
+//
+// GEOMETRY
+//
+//////////////////////////////////////////////////////////////////////
+
+function vertexPosition(i){
+
+    let angle=
+        -Math.PI/2+
+        2*Math.PI*i/N;
+
+    return{
+
+        x:center.x+radius*Math.cos(angle),
+
+        y:center.y+radius*Math.sin(angle)
+
+    };
+
+}
+
+//////////////////////////////////////////////////////////////////////
+//
+// SVG HELPERS
+//
+//////////////////////////////////////////////////////////////////////
+
+function clearSVG(svg){
+
+    while(svg.firstChild)
+        svg.removeChild(svg.firstChild);
+
+}
+
+function svg(tag){
+
+    return document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        tag
+    );
+
+}
+
+//////////////////////////////////////////////////////////////////////
+//
+// DRAW BLOCKS
+//
+//////////////////////////////////////////////////////////////////////
+
+function drawBlocks(){
+
+    for(let block of partition.blocks){
+
+        if(block.length==1)
+            continue;
+
+        let poly=svg("path");
+
+        let pts=block
+            .slice()
+            .sort((a,b)=>a-b)
+            .map(vertexPosition);
+
+        let d="";
+
+        for(let i=0;i<pts.length;i++){
+
+            if(i==0)
+                d+="M";
+
+            else
+                d+="L";
+
+            d+=pts[i].x+" "+pts[i].y+" ";
+
+        }
+
+        d+="Z";
+
+        poly.setAttribute("d",d);
+
+        poly.setAttribute(
+            "class",
+            "blockEdge"
+        );
+
+        poly.setAttribute(
+            "fill",
+            "rgba(31,119,180,0.08)"
+        );
+
+        partitionSVG.appendChild(poly);
+
+    }
+
+}
+
+//////////////////////////////////////////////////////////////////////
+//
+// DRAW OUTER CIRCLE
+//
+//////////////////////////////////////////////////////////////////////
+
+function drawCircle(){
+
+    let c=svg("circle");
+
+    c.setAttribute("cx",center.x);
+    c.setAttribute("cy",center.y);
+    c.setAttribute("r",radius);
+
+    c.setAttribute("fill","none");
+    c.setAttribute("stroke","#666");
+
+    partitionSVG.appendChild(c);
+
+}
+
+//////////////////////////////////////////////////////////////////////
+//
+// DRAW POINTS
+//
+//////////////////////////////////////////////////////////////////////
+
+function drawVertices(){
+
+    for(let i=0;i<N;i++){
+
+        let p=vertexPosition(i);
+
+        let circle=svg("circle");
+
+        circle.setAttribute("cx",p.x);
+        circle.setAttribute("cy",p.y);
+
+        circle.setAttribute("r",10);
+
+        let cls="point";
+
+        if(selected.includes(i))
+            cls+=" selected";
+
+        circle.setAttribute(
+            "class",
+            cls
+        );
+
+        circle.onclick=function(){
+
+            if(selected.includes(i)){
+
+                selected=
+                    selected.filter(
+                        x=>x!=i
+                    );
+
+            }else{
+
+                selected.push(i);
+
+            }
+
+            redraw();
+
+        };
+
+        partitionSVG.appendChild(circle);
+
+        let txt=svg("text");
+
+        txt.setAttribute("x",p.x);
+
+        txt.setAttribute("y",p.y);
+
+        txt.setAttribute(
+            "class",
+            "label"
+        );
+
+        txt.textContent=i+1;
+
+        partitionSVG.appendChild(txt);
+
+    }
+
+}
+
+//////////////////////////////////////////////////////////////////////
+//
+// DRAW PARTITION
+//
+//////////////////////////////////////////////////////////////////////
+
+function drawPartition(){
+
+    clearSVG(partitionSVG);
+
+    drawCircle();
+
+    drawBlocks();
+
+    drawVertices();
+
+}
+
+//////////////////////////////////////////////////////////////////////
+//
+// TOOLBAR
+//
+//////////////////////////////////////////////////////////////////////
+
+document.getElementById("mergeBtn").onclick=function(){
+
+    if(selected.length!=2){
+
+        alert("Select exactly two vertices.");
+
+        return;
+
+    }
+
+    partition.merge(selected[0],selected[1]);
+
+    selected=[];
+
+    redraw();
+
+};
+
+document.getElementById("splitBtn").onclick=function(){
+
+    if(selected.length!=1){
+
+        alert("Select exactly one vertex.");
+
+        return;
+
+    }
+
+    partition.split(selected[0]);
+
+    selected=[];
+
+    redraw();
+
+};
+
+document.getElementById("resetBtn").onclick=function(){
+
+    partition=new NonCrossingPartition(N);
+
+    selected=[];
+
+    redraw();
+
+};
+
+//////////////////////////////////////////////////////////////////////
+//
+// DUAL TREE
+//
+//////////////////////////////////////////////////////////////////////
+
+//
+// We now build the planar dual of the partition.
+//
+// Faces become vertices.
+// Adjacent faces become edges.
+//
+// This is a rooted ordered tree.
+//
+//////////////////////////////////////////////////////////////////////
+
+function polygonEdges(block){
+
+    let b=block.slice().sort((a,b)=>a-b);
+
+    let edges=[];
+
+    for(let i=0;i<b.length;i++){
+
+        let u=b[i];
+        let v=b[(i+1)%b.length];
+
+        edges.push([u,v]);
+
+    }
+
+    return edges;
+
+}
+
+//////////////////////////////////////////////////////////////////////
+
+function allPartitionEdges(){
+
+    let E=[];
+
+    for(let block of partition.blocks){
+
+        if(block.length<2)
+            continue;
+
+        for(let e of polygonEdges(block))
+            E.push(e);
+
+    }
+
+    return E;
+
+}
+
+//////////////////////////////////////////////////////////////////////
+//
+// FACE OBJECT
+//
+//////////////////////////////////////////////////////////////////////
+
+class Face{
+
+    constructor(id){
+
+        this.id=id;
+
+        this.children=[];
+
+        this.parent=null;
+
+    }
+
+}
+
+//////////////////////////////////////////////////////////////////////
+//
+// Instead of implementing a complete planar embedding algorithm,
+// we use the standard recursive decomposition of noncrossing
+// partitions into intervals.
+//
+// Each block becomes a node.
+//
+//////////////////////////////////////////////////////////////////////
+
+class BlockNode{
+
+    constructor(block){
+
+        this.block=block.slice();
+
+        this.children=[];
+
+    }
+
+}
+
+//////////////////////////////////////////////////////////////////////
+
+function intervalContains(a,b,x){
+
+    return a<x && x<b;
+
+}
+
+//////////////////////////////////////////////////////////////////////
+
+function buildInclusionTree(){
+
+    let blocks=
+        partition.blocks
+        .map(
+            b=>b.slice().sort((x,y)=>x-y)
+        );
+
+    blocks.sort(
+        (A,B)=>
+        (B[B.length-1]-B[0])-
+        (A[A.length-1]-A[0])
+    );
+
+    let nodes=blocks.map(
+        b=>new BlockNode(b)
+    );
+
+    let root=new BlockNode([]);
+
+    for(let node of nodes){
+
+        let parent=root;
+
+        let best=1e9;
+
+        for(let other of nodes){
+
+            if(other===node)
+                continue;
+
+            if(other.block.length==0)
+                continue;
+
+            let a=other.block[0];
+            let b=other.block[other.block.length-1];
+
+            let c=node.block[0];
+            let d=node.block[node.block.length-1];
+
+            if(a<c && d<b){
+
+                let span=b-a;
+
+                if(span<best){
+
+                    best=span;
+
+                    parent=other;
+
+                }
+
+            }
+
+        }
+
+        parent.children.push(node);
+
+    }
+
+    return root;
+
+}
+
+//////////////////////////////////////////////////////////////////////
+//
+// DYCK WORD
+//
+//////////////////////////////////////////////////////////////////////
+
+function inclusionTreeToDyck(root){
+
+    let word=[];
+
+    function dfs(node){
+
+        if(node.block.length){
+
+            word.push("(");
+
+        }
+
+        for(let c of node.children)
+
+            dfs(c);
+
+        if(node.block.length){
+
+            word.push(")");
+
+        }
+
+    }
+
+    dfs(root);
+
+    return word;
+
+}
+
+    //////////////////////////////////////////////////////////////////////
+//
+// BINARY TREE
+//
+//////////////////////////////////////////////////////////////////////
+
+class BinaryNode{
+
+    constructor(label){
+
+        this.label=label;
+
+        this.left=null;
+        this.right=null;
+
+        this.x=0;
+        this.y=0;
+
+    }
+
+}
+
+//////////////////////////////////////////////////////////////////////
+//
+// Ordered tree -> Left-child/right-sibling binary tree
+//
+//////////////////////////////////////////////////////////////////////
+
+function orderedToBinary(node){
+
+    if(node==null)
+        return null;
+
+    let b=new BinaryNode(
+        node.block.length==0
+            ? "R"
+            : node.block.join(",")
+    );
+
+    if(node.children.length>0){
+
+        b.left=orderedToBinary(
+            node.children[0]
+        );
+
+        let cur=b.left;
+
+        for(let i=1;i<node.children.length;i++){
+
+            cur.right=
+                orderedToBinary(
+                    node.children[i]
+                );
+
+            cur=cur.right;
+
+        }
+
+    }
+
+    return b;
+
+}
+
+//////////////////////////////////////////////////////////////////////
+//
+// TREE LAYOUT
+//
+//////////////////////////////////////////////////////////////////////
+
+let currentX=0;
+
+function assignCoordinates(root,depth){
+
+    if(root==null)
+        return;
+
+    assignCoordinates(root.left,depth+1);
+
+    root.x=currentX++;
+    root.y=depth;
+
+    assignCoordinates(root.right,depth);
+
+}
+
+//////////////////////////////////////////////////////////////////////
+
+function scaleTree(root){
+
+    let nodes=[];
+
+    function dfs(v){
+
+        if(v==null)
+            return;
+
+        nodes.push(v);
+
+        dfs(v.left);
+        dfs(v.right);
+
+    }
+
+    dfs(root);
+
+    if(nodes.length==0)
+        return;
+
+    let maxX=Math.max(
+        ...nodes.map(n=>n.x)
+    );
+
+    let maxY=Math.max(
+        ...nodes.map(n=>n.y)
+    );
+
+    for(let n of nodes){
+
+        n.x=
+            50+
+            420*n.x/
+            Math.max(1,maxX);
+
+        n.y=
+            50+
+            70*n.y;
+
+    }
+
+}
+
+//////////////////////////////////////////////////////////////////////
+//
+// DRAW TREE
+//
+//////////////////////////////////////////////////////////////////////
+
+function drawBinary(root){
+
+    if(root==null)
+        return;
+
+    if(root.left){
+
+        let e=svg("line");
+
+        e.setAttribute("x1",root.x);
+        e.setAttribute("y1",root.y);
+
+        e.setAttribute("x2",root.left.x);
+        e.setAttribute("y2",root.left.y);
+
+        e.setAttribute(
+            "class",
+            "treeEdge"
+        );
+
+        treeSVG.appendChild(e);
+
+    }
+
+    if(root.right){
+
+        let e=svg("line");
+
+        e.setAttribute("x1",root.x);
+        e.setAttribute("y1",root.y);
+
+        e.setAttribute("x2",root.right.x);
+        e.setAttribute("y2",root.right.y);
+
+        e.setAttribute(
+            "class",
+            "treeEdge"
+        );
+
+        treeSVG.appendChild(e);
+
+    }
+
+    drawBinary(root.left);
+    drawBinary(root.right);
+
+    let c=svg("circle");
+
+    c.setAttribute("cx",root.x);
+    c.setAttribute("cy",root.y);
+    c.setAttribute("r",14);
+
+    c.setAttribute(
+        "class",
+        "treeNode"
+    );
+
+    treeSVG.appendChild(c);
+
+    let t=svg("text");
+
+    t.setAttribute("x",root.x);
+    t.setAttribute("y",root.y);
+
+    t.setAttribute(
+        "class",
+        "label"
+    );
+
+    t.textContent=root.label;
+
+    treeSVG.appendChild(t);
+
+}
+
+//////////////////////////////////////////////////////////////////////
+//
+// COMPLETE TREE DRAWING
+//
+//////////////////////////////////////////////////////////////////////
+
+function drawTree(){
+
+    clearSVG(treeSVG);
+
+    let ordered=
+        buildInclusionTree();
+
+    let binary=
+        orderedToBinary(
+            ordered
+        );
+
+    currentX=0;
+
+    assignCoordinates(
+        binary,
+        0
+    );
+
+    scaleTree(binary);
+
+    drawBinary(binary);
+
+}
+
+    //////////////////////////////////////////////////////////////////////
+//
+// REDRAW EVERYTHING
+//
+//////////////////////////////////////////////////////////////////////
+
+function redraw(){
+
+    drawPartition();
+
+    drawTree();
+
+}
+
+//////////////////////////////////////////////////////////////////////
+//
+// INITIAL DRAW
+//
+//////////////////////////////////////////////////////////////////////
+
+redraw();
+
+</script>
+
+</body>
+</html>
