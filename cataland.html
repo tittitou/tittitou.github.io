@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cataland</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 40px;
+    }
+
+    .point {
+      cursor: pointer;
+      transition: fill 0.2s ease;
+    }
+
+    .edge {
+      cursor: pointer;
+      stroke: black;
+      fill: none;
+      transition: stroke 0.2s, stroke-width 0.2s;
+    }
+
+    .edge:hover {
+      stroke: red !important;
+      stroke-width: 6px !important;
+    }
+
+    .quadrant {
+      border: 1px solid #ccc;
+    }
+
+    #display-container {
+      margin-top: 20px;
+      font-size: 24px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      padding: 10px 20px;
+      background: #e0e0e0;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+
+<body>
+  <p> Change the top left  partition (it must be non crossing) and you can see the other objects that are in bijection with it appear !</p>
+  <p> If you want to decrease N, you must delete the arcs before ( by clicking on them)</p>
+  <p> N = <input type="number" id="Totalsize" name="N" min="1" max="10" /> 
+
+  
+  function 
+  <!-- Quadrants -->
+  <div style="display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; width: 100vw; height: 100vh;">
+    <!-- Top-left quadrant -->
+    <div id="top-left-container" class="quadrant" style="position: relative; background: #f0f0f0;">
+      <svg id="canvas-top-left" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" viewBox="0 0 500 500">
+        
+    
+     
+      </svg>
+      <div id="display-container" style="position: absolute; top: 300px; left: 30px; background: #e0e0e0; padding: 10px; border-radius: 8px;">
+        <div>Partition: <span id="partition-display" style="letter-spacing: 2px;">(1)(2)(3)(4)</span></div>
+        <div>Status: <span id="status-display" class="status-badge non-crossing">Non-Crossing</span></div>
+      </div>
+    </div>
+
+    <!-- Top-right quadrant -->
+    <div id="top-right-container" class="quadrant" style="position: relative; background: #e0f7fa;">
+      <svg id="canvas-top-right" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></svg>
+      <div id="display-container" style="position: absolute; top: 400px; left: 30px; background: #e0e0e0; padding: 10px; border-radius: 8px;">
+        <div><span id="Tree-display" style="letter-spacing: 1px;">Binary  Tree</span></div>
+      </div>
+    
+    </div>
+
+    <!-- Bottom-left quadrant: BRACKET VECTOR -->
+    <div id="bottom-left-container" class="quadrant" style="position: relative; background: #f0f0f0;">
+      <svg id="canvas-bottom-left" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" viewBox="0 0 500 500">
+        <circle cx="100" cy="300" r="5" fill="black" class="point" data-id="1" />
+        <circle cx="200" cy="300" r="5" fill="black" class="point" data-id="2" />
+        <circle cx="300" cy="300" r="5" fill="black" class="point" data-id="3" />
+        <circle cx="400" cy="300" r="5" fill="black" class="point" data-id="4" />
+      </svg>
+      <div id="display-container" style="position: relative; top: 300px; left: 30px; width: 50%; background: #e0e0e0; padding: 10px; border-radius: 8px;">
+        <div>Bracket vector: <span id="BV-display" style="letter-spacing: 1px;">[0,0,0,0]</span></div>
+      </div>
+    </div>
+
+    <!-- Bottom-right quadrant -->
+    <div id="bottom-right-container" class="quadrant" style="position: relative; background: #dcedc8;">
+      <svg id="canvas-bottom-right" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></svg>
+    
+    <div id="display-container" style="position: relative; top: 300px;width: 50%; left: 30px; background: #e0e0e0; padding: 10px; border-radius: 8px;">
+      <div>Dyck path <span id="Dyck path" style="letter-spacing: 1px;"></span></div>
+    </div>
+    </div>
+    
+  </div>
+
+  <script>
+    //obtain total size N
+
+    
+
+
+    
+    // Where big things are happening
+    window.onload = function() {
+
+
+
+
+      let firstPoint = null;
+      const canvas = document.getElementById('canvas-top-left');
+      const points = canvas.querySelectorAll('.point');
+
+      //the following part, to get the partition, was made using AI, sorry !
+      function updatePartition() {
+
+        var N = document.getElementById("Totalsize").value;
+        console.log(N)
+
+        const nodes = Array.from({ length: N }, (_, i) => i + 1);
+
+        
+
+        const adjacencyList = {};
+        for (let i = 1; i <= N; i++) {
+        adjacencyList[i] = [];
+        }
+
+        const activeEdges = canvas.querySelectorAll('.edge');
+        activeEdges.forEach(edge => {
+          const from = parseInt(edge.dataset.from);
+          const to = parseInt(edge.dataset.to);
+          adjacencyList[from].push(to);
+          adjacencyList[to].push(from);
+        });
+
+        const visited = new Set();
+        const components = [];
+        nodes.forEach(node => {
+          if (!visited.has(node)) {
+            const component = [];
+            const queue = [node];
+            visited.add(node);
+
+            while (queue.length > 0) {
+              const current = queue.shift();
+              component.push(current);
+              adjacencyList[current].forEach(neighbor => {
+                if (!visited.has(neighbor)) {
+                  visited.add(neighbor);
+                  queue.push(neighbor);
+                }
+              });
+            }
+            component.sort((a, b) => a - b);
+            components.push(component);
+          }
+        });
+
+        components.sort((a, b) => a[0] - b[0]);
+        const outputString = components.map(comp => `(${comp.join(',')})`).join('');
+
+        // stop of the AI segment
+        
+        document.getElementById('partition-display').innerText = outputString;
+
+
+      // draw the non crossing circles
+
+      function generateCircles(N) {
+  const canvas = document.getElementById('canvas-top-left');
+  
+  // Remove only the circles, keep the edges intact
+  const existingCircles = canvas.querySelectorAll('.point');
+  existingCircles.forEach(circle => circle.remove());
+
+  for (let i = 1; i <= N; i++) {
+    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    circle.setAttribute('cx', 100 + (i-1) * 500/ N); // Position circles horizontally
+    circle.setAttribute('cy', 250); // Fixed vertical position
+    circle.setAttribute('r', 20); // Circle radius
+    circle.setAttribute('fill', 'blue');
+    circle.setAttribute('class', 'point');
+    circle.setAttribute('data-id', i);
+
+    // Add event listener to the circle
+    circle.addEventListener('click', (e) => {
+      const clickedPoint = e.target;
+      const cx = parseFloat(clickedPoint.getAttribute('cx'));
+      const cy = parseFloat(clickedPoint.getAttribute('cy'));
+      const id = clickedPoint.getAttribute('data-id');
+
+      if (!firstPoint) {
+        firstPoint = { x: cx, y: cy, element: clickedPoint, id: id };
+        clickedPoint.setAttribute('fill', 'red');
+      } else {
+        if (clickedPoint === firstPoint.element) return;
+
+        // Draw the edges of the NCP
+        const newLine = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        let startX = firstPoint.x;
+        let endX = cx;
+
+        if (startX > endX) {
+          startX = cx;
+          endX = firstPoint.x;
+        }
+
+        const pathData = `M ${startX} ${firstPoint.y} A 200 225 0 0 1 ${endX} ${cy}`;
+        newLine.setAttribute('d', pathData);
+        newLine.setAttribute('class', 'edge');
+        newLine.setAttribute('stroke-width', '4');
+        newLine.dataset.from = firstPoint.id;
+        newLine.dataset.to = id;
+
+        // Click on the edge to remove it
+        newLine.addEventListener('click', (lineEvent) => {
+          lineEvent.stopPropagation();
+          newLine.remove();
+          updatePartition();
+        });
+
+        canvas.insertBefore(newLine, canvas.firstChild);
+
+        updatePartition();
+
+        clickedPoint.setAttribute('fill', 'green');
+        const savedFirstElement = firstPoint.element;
+        setTimeout(() => {
+          if (savedFirstElement) savedFirstElement.setAttribute('fill', 'blue');
+          if (clickedPoint) clickedPoint.setAttribute('fill', 'blue');
+        }, 800);
+
+        firstPoint = null;
+      }
+    });
+
+    canvas.appendChild(circle);
+  }
+}
+  generateCircles(N); // Call the function to generate circles based on N
+
+        // Get the bracket vector associated with the current partition
+        function getBracketVector(components) {
+          const vector = [];
+          for (let i = 1; i <= N; i++) {
+          vector.push(0);
+        }
+          components.forEach(component => {
+            if (component.length > 1) {
+              const end = Math.max(...component); // Find the last element in the component
+              component.forEach(node => {
+                vector[node - 1] = end - node; // Set the value as j - i
+              });
+            }
+          });
+          return vector;
+        }
+
+        let bracketVector = getBracketVector(components);
+        document.getElementById('BV-display').innerText = '[' + String(bracketVector) + ']';
+
+        // Draw the edges of the Bracket vector
+        const bottomLeftCanvas = document.getElementById('canvas-bottom-left');
+        bottomLeftCanvas.innerHTML = ''; // Clear previous lines
+        console.log('Bracket Vector:', bracketVector); // Debug the bracket vector
+
+        let y_const = 300; // Constant y-coordinate for the base of the lines
+        for (let i = 0; i < N; i++) {
+          const BVline = document.createElementNS("http://www.w3.org/2000/svg", "line");
+          BVline.setAttribute('x1', (i + 1) * 500 /N);
+          BVline.setAttribute('y1', y_const - bracketVector[i] * 300 /N ); // Scale the height for better visibility
+          BVline.setAttribute('x2', (i + 1) * 500 /N);
+          BVline.setAttribute('y2', y_const); // Scale the height for better visibility
+          BVline.setAttribute('stroke', 'black');
+          BVline.setAttribute('stroke-width', '4');
+          bottomLeftCanvas.appendChild(BVline);
+
+          const BVline2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+          BVline2.setAttribute('x1', (i + 1) * 500 /N);
+          BVline2.setAttribute('y1', y_const - bracketVector[i] * 300 /N); // Scale the height for better visibility
+          BVline2.setAttribute('x2', (i + 1) * 500 /N + bracketVector[i] * 500 /N);
+          BVline2.setAttribute('y2', y_const); // Scale the height for better visibility
+          BVline2.setAttribute('stroke', 'black');
+          BVline2.setAttribute('stroke-width', '4');
+          bottomLeftCanvas.appendChild(BVline2);
+
+          const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          circle.setAttribute('cx', (i + 1) * 500 /N + bracketVector[i] * 500 /N);
+          circle.setAttribute('cy', y_const);
+          circle.setAttribute('r', 5);
+          circle.setAttribute('fill', 'black');
+          bottomLeftCanvas.appendChild(circle);
+        }
+      
+      
+        function getDualBinaryTree(bracketVector) {
+          if (bracketVector.length == 0) {
+            return [];}
+
+          if (bracketVector.length == 1) {
+            return [[],[]];
+          }
+          else {
+            const a = bracketVector[0];
+            const left = getDualBinaryTree(bracketVector.slice(1,a+1));
+            const right  = getDualBinaryTree(bracketVector.slice(a+1));
+            
+            console.log('left:', left);
+            console.log('right:', right);
+
+            return [left, right];
+          }
+          return null;
+        }
+
+        // GET THE BINARY TREE
+        function getBinaryTree(bracketVector) {
+          const n=bracketVector.length;
+          if (bracketVector.length == 0) {
+            return [];}
+
+          if (bracketVector.length == 1) {
+            return [[],[]];
+          }
+          else {
+            var coupe = -1;
+            
+            for (let i = 0; i <n; i++) {
+              if (bracketVector[n-i-1] == i ){coupe = n-i-1}
+              }
+            }
+            
+          {
+            
+            const left = getBinaryTree(bracketVector.slice(0,coupe));
+            const right  = getBinaryTree(bracketVector.slice(coupe+1));
+            
+
+            return [left, right];
+          }
+          return null;
+        }
+
+
+
+        let DBT = getDualBinaryTree(bracketVector);
+
+        let BT = getBinaryTree(bracketVector);
+
+
+        
+      
+
+        // Draw the Binary tree 
+        const TopRightCanvas = document.getElementById('canvas-top-right');
+        TopRightCanvas.innerHTML = '';
+        
+        function drawBinaryTree(node, x, y, width) {
+          if (!node) return;
+          
+          const nodeX = x;
+          const nodeY = y;
+          
+          if (node.length != 0){
+          const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          circle.setAttribute('cx', nodeX);
+          circle.setAttribute('cy', nodeY);
+          circle.setAttribute('r', 10);
+          circle.setAttribute('fill', 'blue');
+          TopRightCanvas.appendChild(circle);
+          }
+          
+          if (node[0]) {
+            const leftX = nodeX - width;
+            const leftY = nodeY + 50;
+            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.setAttribute('x1', nodeX);
+            line.setAttribute('y1', nodeY);
+            line.setAttribute('x2', leftX);
+            line.setAttribute('y2', leftY);
+            line.setAttribute('stroke', 'black');
+            line.setAttribute('stroke-width', '4');
+            TopRightCanvas.appendChild(line);
+            drawBinaryTree(node[0], leftX, leftY, 2*width/3);
+          }
+          if (node[1]) {
+            const rightX = nodeX + width;
+            const rightY = nodeY + 50;
+            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.setAttribute('x1', nodeX);
+            line.setAttribute('y1', nodeY);
+            line.setAttribute('x2', rightX);
+            line.setAttribute('y2', rightY);
+            line.setAttribute('stroke', 'black');
+            line.setAttribute('stroke-width', '4');
+            TopRightCanvas.appendChild(line);
+            drawBinaryTree(node[1], rightX, rightY , 2 * width/3 );
+          }
+        }
+
+        function size(BinaryTree) {
+          if (!BinaryTree) return 0;
+          return 1 + size(BinaryTree[0]) + size(BinaryTree[1]);
+        } 
+
+         ;
+        drawBinaryTree(BT, 350, 50, 100);
+          
+      
+      
+    // Getting Dyck Paths
+      
+      function GetDyckPath(BT) {
+    // Base case: if the binary tree is empty, return an empty array
+    if (!BT || BT.length === 0) {
+      return [];
+    }
+
+    // Recursive case: concatenate the Dyck paths of the left and right subtrees
+    const leftPath = GetDyckPath(BT[0]);
+    const rightPath = GetDyckPath(BT[1]);
+    return leftPath.concat([1], rightPath, [0]);
+  }
+
+      let DP = GetDyckPath(BT);
+      console.log('Dyck Path:', DP);
+
+      // Drawing Dyck Paths
+
+      const bottomRightCanvas = document.getElementById('canvas-bottom-right');
+        bottomRightCanvas.innerHTML = ''; // Clear previous lines
+
+        let h = 0;
+        for (let i = 0; i < DP.length; i++) {
+          const DPline = document.createElementNS("http://www.w3.org/2000/svg", "line");
+          DPline.setAttribute('stroke', 'black');
+          DPline.setAttribute('stroke-width', '4');
+          
+          const S = 400 / N
+          if (DP[i] == 1) {
+            DPline.setAttribute('x1', 50 + (i) * S);
+            DPline.setAttribute('y1', h + y_const ); 
+            DPline.setAttribute('x2', 50 + (i + 1) * S);
+            DPline.setAttribute('y2', h + y_const - 50); 
+            h = h - 50;
+          } 
+          else {
+            DPline.setAttribute('x1', 50 + (i) * S);
+            DPline.setAttribute('y1', h + y_const ); 
+            DPline.setAttribute('x2', 50 + (i + 1) * S);
+            DPline.setAttribute('y2', h + y_const + 50); 
+            h = h + 50;
+          }
+          
+          bottomRightCanvas.appendChild(DPline); }
+
+
+    }
+
+      // DRAWING
+      points.forEach(point => {
+        point.addEventListener('click', (e) => {
+          const clickedPoint = e.target;
+          const cx = parseFloat(clickedPoint.getAttribute('cx'));
+          const cy = parseFloat(clickedPoint.getAttribute('cy'));
+          const id = clickedPoint.getAttribute('data-id');
+
+          if (!firstPoint) {
+            firstPoint = { x: cx, y: cy, element: clickedPoint, id: id };
+            clickedPoint.setAttribute('fill', 'red');
+          } else {
+            if (clickedPoint === firstPoint.element) return;
+
+            // Draw the edges of the NCP
+            const newLine = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            let startX = firstPoint.x;
+            let endX = cx;
+
+            if (startX > endX) {
+              startX = cx;
+              endX = firstPoint.x;
+            }
+
+            const pathData = `M ${startX} ${firstPoint.y} A 200 200 0 0 1 ${endX} ${cy}`;
+            newLine.setAttribute('d', pathData);
+            newLine.setAttribute('class', 'edge');
+            newLine.setAttribute('stroke-width', '4');
+            newLine.dataset.from = firstPoint.id;
+            newLine.dataset.to = id;
+
+            // Click on the edge to remove it
+            newLine.addEventListener('click', (lineEvent) => {
+              lineEvent.stopPropagation();
+              newLine.remove();
+              updatePartition();
+            });
+
+            canvas.insertBefore(newLine, canvas.firstChild);
+
+            updatePartition();
+
+            clickedPoint.setAttribute('fill', 'green');
+            const savedFirstElement = firstPoint.element;
+            setTimeout(() => {
+              if (savedFirstElement) savedFirstElement.setAttribute('fill', 'blue');
+              if (clickedPoint) clickedPoint.setAttribute('fill', 'blue');
+            }, 800);
+
+            firstPoint = null;
+          }
+        });
+      });
+
+
+      // Add an event listener to the input field
+const inputField = document.getElementById('Totalsize');
+inputField.addEventListener('input', () => {
+  const N = parseInt(inputField.value, 10) || 4; // Get the value of N, default = 4
+  console.log('N changed to:', N); 
+  updatePartition(); 
+});
+
+    };
+  </script>
+</body>
+</html>
