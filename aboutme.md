@@ -12,16 +12,16 @@ I organize the PHD seminar of the LIGM since two years now, you can find the tal
 # Teaching
 ## 2024-2025
 
-### -L2 TP Base de données (24h)
-### -L2 TP/TD Labo math info (18h)
-### -L1 TP apprentissage par problème 1 (24h)
-### -L1 projet 1 (10h)
+- L2 TP Base de données (24h) 
+- L2 TP/TD Labo math info (18h)
+- L1 TP apprentissage par problème 1 (24h)
+- L1 projet 1 (10h)
 
 ## 2025-2026
 
-### -L2 TP Base de données (24h)
-### -ESSIE E3  TP/TD Algorithme en C (20h)
-### -L1 TP apprentissage par problème 2 (24h)
-### -L1 projet 2 (10h)
+- L2 TP Base de données (24h)
+ - ESSIE E3  TP/TD Algorithme en C (20h)
+ - L1 TP apprentissage par problème 2 (24h)
+ - L1 projet 2 (10h)
 
 
