@@ -4,12 +4,10 @@ title: Misc
 ---
 ## Music!
 
-<p></p>
 
-<p> 
-I play drums, keyboard and i am learning trumpet ! </p>
+#### I play drums, keyboard and i am learning trumpet ! </p>
 
-<p></p>
+
 
 <p>
 <img src="{{ 'assets/img/ImageEP.jpg' | relative_url }}" alt="My EP" />
