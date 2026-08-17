@@ -7,6 +7,11 @@ I am a PhD student under the supervision of Wenjie Fang and Eric Fusy in the [La
 
 I organize the PHD seminar of the LIGM since two years now, you can find the talks of this seminar [here](https://ligm.univ-eiffel.fr/seminaires/). If you're "young" and you wish to talk, please contact me !
 
+# Organisation
+
+- Young/PHD seminar of the LIGM
+- CJC-MA 2026 : Congrès des Jeunes Chercheur.e.s en Mathématiques Appliquées, [link](https://cjcma2026.sciencesconf.org/?forward-action=index&forward-controller=index&lang=fr)
+- Undegraduate and PHD Bézout day, [link](https://indico.math.cnrs.fr/event/14236/timetable/#20250521)
 
 
 # Teaching
