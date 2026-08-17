@@ -51,10 +51,8 @@ title: Cataland
 </head>
 
 <body>
-  <p></p>
-  <p></p>
-  <p> Change the top left  partition (it must be non crossing) and you can see the other objects that are in bijection with it appear !</p>
-  <p> If you want to decrease N, you must delete the arcs before ( by clicking on them)</p>
+  <p> </p>
+  <p> Change the top left  partition (it must be non crossing!) and you can see the other objects that are in bijection with it appear !</p>
   <p> N = <input type="number" id="Totalsize" name="N" min="1" max="10" /> 
 
   
@@ -70,7 +68,6 @@ title: Cataland
       </svg>
       <div id="display-container" style="position: absolute; top: 300px; left: 30px; background: #e0e0e0; padding: 10px; border-radius: 8px;">
         <div>Partition: <span id="partition-display" style="letter-spacing: 2px;">(1)(2)(3)(4)</span></div>
-        <div>Status: <span id="status-display" class="status-badge non-crossing">Non-Crossing</span></div>
       </div>
     </div>
 
@@ -125,6 +122,7 @@ title: Cataland
       const points = canvas.querySelectorAll('.point');
 
       //the following part, to get the partition, was made using AI, sorry !
+      // update partition update everyting
       function updatePartition() {
 
         var N = document.getElementById("Totalsize").value;
@@ -531,7 +529,10 @@ const inputField = document.getElementById('Totalsize');
 inputField.addEventListener('input', () => {
   const N = parseInt(inputField.value, 10) || 4; // Get the value of N, default = 4
   console.log('N changed to:', N); 
+  const edges = canvas.querySelectorAll('.edge'); // Select all arcs (edges)
+  edges.forEach(edge => edge.remove());
   updatePartition(); 
+
 });
 
     };
