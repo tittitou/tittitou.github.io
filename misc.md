@@ -2,7 +2,7 @@
 layout: base
 title: Misc
 ---
-## Music
+# Music
 
 I play drums, keyboard and i am learning trumpet ! 
 
